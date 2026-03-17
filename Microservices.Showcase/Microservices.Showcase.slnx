@@ -1,0 +1,13 @@
+<Solution>
+  <Project Path="src/Microservices.Shared/Microservices.Shared.csproj" />
+  <Project Path="src/Microservices.Gateway/Microservices.Gateway.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Microservices.Shared.Tests/Microservices.Shared.Tests.csproj" />
+  </Folder>
+  <Folder Name="/bench/">
+    <Project Path="bench\Microservices.Showcase.Benchs\Microservices.Showcase.Benchs.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="compose.yaml" />
+  </Folder>
+</Solution>

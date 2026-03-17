@@ -1,0 +1,7 @@
+﻿services:
+  marketdatagateway:
+    image: marketdatagateway
+    build:
+      context: .
+      dockerfile: MarketDataGateway/Dockerfile
+

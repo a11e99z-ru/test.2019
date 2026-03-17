@@ -1,0 +1,11 @@
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/bin/Debug/net10.0/Microservices.Shared.deps.json
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/bin/Debug/net10.0/Microservices.Shared.dll
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/bin/Debug/net10.0/Microservices.Shared.pdb
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.GeneratedMSBuildEditorConfig.editorconfig
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.AssemblyInfoInputs.cache
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.AssemblyInfo.cs
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.csproj.CoreCompileInputs.cache
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.dll
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/refint/Microservices.Shared.dll
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/Microservices.Shared.pdb
+/home/master/coding/my.gitlab/csharp/Microservices.Showcase/src/Microservices.Shared/obj/Debug/net10.0/ref/Microservices.Shared.dll
