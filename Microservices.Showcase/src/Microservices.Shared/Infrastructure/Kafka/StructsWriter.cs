@@ -34,7 +34,7 @@ public sealed class StructsWriter<T>
         if (_producer is { } prod)
             await prod.ProduceAsync(_config.Topic, msg, ct);
         else
-            _logger.Warning("StructsWriter<{type}>.PublishAsync: Kafka-producer is not ready yet. Ignore item.", TypeName);
+            _logger.Warning("StructsWriter<{type}>.PublishAsync: Kafka-producer is not ready yet. Ignoring item.", TypeName);
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -42,6 +42,8 @@ public sealed class StructsWriter<T>
         _logger.Information("StructsWriter<{type}> is starting...", TypeName);
         try
         {
+            
+            
             while (!ct.IsCancellationRequested)
             {
             }

@@ -9,12 +9,12 @@ namespace Microservices.Shared.Infrastructure;
 
 public sealed class Distributor<T>
     : BackgroundService
-    , IAsyncDistributor<T[]>
+    , IAsyncDistributor<T>
     where T : unmanaged
 {
     private static readonly string TypeName = typeof(T).Name;
     private readonly ILogger _logger = Log.ForContext<Distributor<T>>();
-    private readonly Channel<T[]> _channel;
+    private readonly Channel<T> _channel;
     private readonly List<IAsyncPublisher<T[]>> _pubs;
     
     public Distributor(ILogger logger,
@@ -22,14 +22,14 @@ public sealed class Distributor<T>
         params IEnumerable<IAsyncPublisher<T[]>> publishers)
     {
         _pubs = publishers.ToList();
-        _channel = Channel.CreateBounded<T[]>(new BoundedChannelOptions(options.Value.QueueSize)
+        _channel = Channel.CreateBounded<T>(new BoundedChannelOptions(options.Value.QueueSize)
         {
             SingleReader = true,
             FullMode = BoundedChannelFullMode.Wait,
         });
     }
     
-    public async ValueTask PublishAsync(T[] value, CancellationToken ct)
+    public async ValueTask PublishAsync(T value, CancellationToken ct)
     {
         await _channel.Writer.WriteAsync(value, ct);
     }
@@ -39,10 +39,16 @@ public sealed class Distributor<T>
         _logger.Information("Distributor<{type}> is starting...", TypeName);
         try
         {
+            var items = new List<T>(10);
             while (!ct.IsCancellationRequested)
             {
-                var arr = await _channel.Reader.ReadAsync(ct);
+                // read all items in channel
+                var item = await _channel.Reader.ReadAsync(ct);
+                do { items.Add(item); } 
+                while (_channel.Reader.TryRead(out item));
                 
+                var arr = items.ToArray();
+                items.Clear();
                 var ts = _pubs.Select(x => x.PublishAsync(arr, ct).AsTask());
                 Task.WaitAll(ts, ct);
             }
