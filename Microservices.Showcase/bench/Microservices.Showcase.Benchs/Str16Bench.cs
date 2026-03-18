@@ -10,10 +10,10 @@ namespace Microservices.Showcase.Benchmarks;
 [MemoryDiagnoser(true)]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-[SimpleJob(RunStrategy.Throughput, warmupCount: 5, iterationCount: 10)]
+[SimpleJob(RunStrategy.Throughput, launchCount: 1, warmupCount: 5, iterationCount: 10)]
 public class Str16Bench
 {
-    private static readonly byte[] Bytes = "btc-USDT\"........"u8.ToArray();
+    private static readonly byte[] Bytes = """btc/USDT","f":2,"""u8.ToArray();
     private static readonly Str16 BtcUsdt = Str16.FromBytes(Bytes.AsSpan()[..8]);  
     
     [Benchmark(Baseline = true), BenchmarkCategory("ToLower")]
@@ -33,26 +33,6 @@ public class Str16Bench
         return new(buf[..len]);
     }
     
-    [Benchmark(Baseline = true), BenchmarkCategory("Read")]
-    public Str16 Str16_FromBytesUnsafe() 
-        => Str16.FromBytesUnsafe(Bytes.AsSpan()[..8]);
-    
-    [Benchmark, BenchmarkCategory("Read")]
-    public Str16 Str16_FromBytes() 
-        => Str16.FromBytes(Bytes.AsSpan()[..8]);
-
-    [Benchmark, BenchmarkCategory("Read")]
-    public Str16 Str16_FromJsonUnsafe() 
-        => Str16.FromJsonUnsafe(Bytes.AsSpan(), out var _);
-
-    [Benchmark, BenchmarkCategory("Read")]
-    public int Span_ReadFromJsonTillQuote()
-    {
-        var sp = Bytes.AsSpan();
-        // we expect '\"'
-        return sp[..sp.IndexOf((byte)'\"')].Length; // really find Span then it Length
-    }
-
     [Benchmark(Baseline = true), BenchmarkCategory("HashCode")]
     public int Str16_GetHashCode() => BtcUsdt.GetHashCode();
 
@@ -74,23 +54,66 @@ public class Str16Bench
     // shows cost of Span(.Length)
     [Benchmark, BenchmarkCategory("RawData")]
     public int Str16_Span() => BtcUsdt.Span.Length;
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Read")]
+    public Str16 Str16_FromBytesUnsafe() 
+        => Str16.FromBytesUnsafe(Bytes.AsSpan()[..8]);
+    
+    [Benchmark, BenchmarkCategory("Read")]
+    public Str16 Str16_FromBytes() 
+        => Str16.FromBytes(Bytes.AsSpan()[..8]);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Json")]
+    public int Str16_FromJsonUnsafe_ShortStr()
+    {
+        var json = """usdt","pi":3.1415926535,"""u8; // 4 chars
+        var str = Str16.FromJsonUnsafe(json, out var len);
+        return len;
+    }
+
+    [Benchmark, BenchmarkCategory("Json")]
+    public int Str16_FromJsonUnsafe_LongStr()
+    {
+        var json = """btcUSDT_240501","f":2,"""u8; // 14 chars
+        var str = Str16.FromJsonUnsafe(json, out var len);
+        return len;
+    }
+
+    [Benchmark, BenchmarkCategory("Json")]
+    public int Span_ReadFromJson_ShortStr()
+    {
+        var json = """usdt","pi":3.1415926535,"""u8; // 4 chars
+        // we expect '\"'
+        return json[..json.IndexOf((byte)'\"')].Length; // really find Span then it Length
+    }
+
+    [Benchmark, BenchmarkCategory("Json")]
+    public int Span_ReadFromJson_LongStr()
+    {
+        var json = """btcUSDT_240501","f":2,"""u8; // 14 chars
+        // we expect '\"'
+        return json[..json.IndexOf((byte)'\"')].Length; // really find Span then it Length
+    }
 }
 
 /* Results on AMD 6800H
-| Method                     | Categories | Mean       | Error     | StdDev    | Ratio  | RatioSD | Allocated | Alloc Ratio |
-|--------------------------- |----------- |-----------:|----------:|----------:|-------:|--------:|----------:|------------:|
-| Str16_GetHashCode          | HashCode   |  0.2355 ns | 0.0099 ns | 0.0066 ns |   1.00 |    0.04 |         - |          NA |
-| HashCode_Vec128            | HashCode   | 43.6321 ns | 0.5607 ns | 0.3336 ns | 185.39 |    5.13 |         - |          NA |
-| HashCode_CombineTwoInt64   | HashCode   |  5.6751 ns | 0.0257 ns | 0.0153 ns |  24.11 |    0.65 |         - |          NA |
-|                            |            |            |           |           |        |         |           |             |
-| Str16_SseData              | RawData    |  0.2976 ns | 0.0052 ns | 0.0034 ns |   1.00 |    0.02 |         - |          NA |
-| Str16_Span                 | RawData    |  0.2751 ns | 0.0058 ns | 0.0038 ns |   0.92 |    0.02 |         - |          NA |
-|                            |            |            |           |           |        |         |           |             |
-| Str16_FromBytesUnsafe      | Read       |  1.5710 ns | 0.0313 ns | 0.0207 ns |   1.00 |    0.02 |         - |          NA |
-| Str16_FromBytes            | Read       |  4.9357 ns | 0.0286 ns | 0.0189 ns |   3.14 |    0.04 |         - |          NA |
-| Str16_FromJsonUnsafe       | Read       |  2.0481 ns | 0.0230 ns | 0.0152 ns |   1.30 |    0.02 |         - |          NA |
-| Span_ReadFromJsonTillQuote | Read       |  2.2558 ns | 0.0235 ns | 0.0156 ns |   1.44 |    0.02 |         - |          NA |
-|                            |            |            |           |           |        |         |           |             |
-| Str16_ToLower              | ToLower    |  0.8453 ns | 0.0055 ns | 0.0029 ns |   1.00 |    0.00 |         - |          NA |
-| ManualToLower              | ToLower    | 17.2080 ns | 0.0951 ns | 0.0566 ns |  20.36 |    0.09 |         - |          NA | 
+| Method                        | Categories | Mean       | Error     | StdDev    | Ratio  | RatioSD | Allocated | Alloc Ratio |
+|------------------------------ |----------- |-----------:|----------:|----------:|-------:|--------:|----------:|------------:|
+| Str16_GetHashCode             | HashCode   |  0.2997 ns | 0.0119 ns | 0.0079 ns |   1.00 |    0.04 |         - |          NA |
+| HashCode_Vec128               | HashCode   | 46.9429 ns | 1.5248 ns | 1.0086 ns | 156.74 |    5.07 |         - |          NA |
+| HashCode_CombineTwoInt64      | HashCode   |  5.7837 ns | 0.0341 ns | 0.0203 ns |  19.31 |    0.49 |         - |          NA |
+|                               |            |            |           |           |        |         |           |             |
+| Str16_FromJsonUnsafe_ShortStr | Json       |  0.6735 ns | 0.0104 ns | 0.0069 ns |   1.00 |    0.01 |         - |          NA |
+| Str16_FromJsonUnsafe_LongStr  | Json       |  0.6629 ns | 0.0164 ns | 0.0109 ns |   0.98 |    0.02 |         - |          NA |
+| Span_ReadFromJson_ShortStr    | Json       |  1.6212 ns | 0.0322 ns | 0.0192 ns |   2.41 |    0.04 |         - |          NA |
+| Span_ReadFromJson_LongStr     | Json       |  1.6503 ns | 0.0281 ns | 0.0186 ns |   2.45 |    0.04 |         - |          NA |
+|                               |            |            |           |           |        |         |           |             |
+| Str16_SseData                 | RawData    |  0.2622 ns | 0.0129 ns | 0.0085 ns |   1.00 |    0.04 |         - |          NA |
+| Str16_Span                    | RawData    |  0.2202 ns | 0.0078 ns | 0.0052 ns |   0.84 |    0.03 |         - |          NA |
+|                               |            |            |           |           |        |         |           |             |
+| Str16_FromBytesUnsafe         | Read       |  1.6303 ns | 0.0268 ns | 0.0178 ns |   1.00 |    0.01 |         - |          NA |
+| Str16_FromBytes               | Read       |  5.0846 ns | 0.0505 ns | 0.0334 ns |   3.12 |    0.04 |         - |          NA |
+|                               |            |            |           |           |        |         |           |             |
+| Str16_ToLower                 | ToLower    |  0.8600 ns | 0.0122 ns | 0.0072 ns |   1.00 |    0.01 |         - |          NA |
+| ManualToLower                 | ToLower    | 12.2919 ns | 0.1157 ns | 0.0766 ns |  14.29 |    0.14 |         - |          NA |
 */

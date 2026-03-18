@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microservices.Shared.Domain;
 using Xunit;
@@ -6,6 +7,13 @@ namespace Microservices.Shared.Tests.Domain;
 
 public class Str16Tests
 {
+    [Fact]
+    public void Str16_IsUnmanaged()
+    {
+        Assert.True(typeof(Str16).IsValueType);
+        Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Str16>());
+    }
+
     [Fact]
     public void Empty_ShouldHaveZeroLength()
     {
@@ -135,7 +143,7 @@ public class Str16Tests
     [InlineData("\"h3llo \",.....", "h3llo ")]
     [InlineData("\"hello 1234,\"].........", "hello 1234,")]
     [InlineData("\"hell0-W0RLD h1-TH3R3\",", "hell0-W0RLD h1-T")]
-    public void FromJsonUnsafe_ShouldReadTillQuoteOr15CharsOnly(string input, string expected)
+    public void FromJsonUnsafe_ShouldReadTillQuoteOr16CharsOnly(string input, string expected)
     {
         Span<byte> buf = stackalloc byte[100];
         Encoding.UTF8.GetBytes(input).CopyTo(buf);
