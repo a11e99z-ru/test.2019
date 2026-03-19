@@ -3,21 +3,21 @@ namespace Microservices.Shared.Helpers;
 /*
 // instead
 
-    var items = await _chanTrade.Reader.ReadAsync(ct);
+    var arr = ArrayPool<byte>.Shared.Rent( 4 * 1024 );
     try
     {
-        await db.BulkCopyAsync(new BulkCopyOptions { BulkCopyType = BulkCopyType.ProviderSpecific }, items, ct);
+        // do something that can throw
     }
     finally
     {
-        Return(items, _freeTrade);
+        ArrayPool<byte>.Shared.Return(arr);
     }
 
 // we can use
 
-    var items = await _chanTrade.Reader.ReadAsync(ct);
-    using var _ = Defer.It(items, it => Return(it, _freeTrade));
-    await db.BulkCopyAsync(new BulkCopyOptions { BulkCopyType = BulkCopyType.ProviderSpecific }, items, ct);
+    var arr = ArrayPool<byte>.Shared.Rent( 4 * 1024 );
+    using var _ = Defer.It(arr, it => ArrayPool<byte>.Shared.Return(it)); // no lambda captures, no GC
+    // do something that can throw
 */
 
 public readonly record struct Defer(Action Free)

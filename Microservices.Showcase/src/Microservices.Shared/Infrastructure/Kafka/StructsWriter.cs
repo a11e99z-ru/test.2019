@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Confluent.Kafka;
@@ -10,10 +11,10 @@ using Serilog;
 namespace Microservices.Shared.Infrastructure.Kafka;
 
 public sealed class StructsWriter<T>
-    : BackgroundService
-    , IAsyncPublisher<T[]>
-    , ISerializer<T[]>
-    , ISerializer<string>
+    : IHostedService
+        , IAsyncPublisher<T[]>
+        , ISerializer<T[]>
+        , ISerializer<string>
     where T : unmanaged
 {
     private static readonly string TypeName = typeof(T).Name;
@@ -34,31 +35,69 @@ public sealed class StructsWriter<T>
         if (_producer is { } prod)
             await prod.ProduceAsync(_config.Topic, msg, ct);
         else
-            _logger.Warning("StructsWriter<{type}>.PublishAsync: Kafka-producer is not ready yet. Ignoring item.", TypeName);
+            _logger.Warning("StructsWriter<{type}>.PublishAsync: Kafka-producer is not ready yet. Ignoring item.",
+                TypeName);
     }
 
-    protected override async Task ExecuteAsync(CancellationToken ct)
+    public Task StartAsync(CancellationToken ct)
     {
-        _logger.Information("StructsWriter<{type}> is starting...", TypeName);
         try
         {
-            
-            
-            while (!ct.IsCancellationRequested)
+            var cfgKafka = new ProducerConfig
             {
-            }
+                BootstrapServers = _config.Servers,
+                ClientId = Assembly.GetEntryAssembly()!.GetName().Name,
+                AllowAutoCreateTopics = true,
+                LingerMs = 50,
+                BatchSize = 10,
+                //TODO security
+            };
+            
+            var prod = new ProducerBuilder<string, T[]>(cfgKafka)
+                .SetKeySerializer(this)
+                .SetValueSerializer(this)
+                .SetErrorHandler((_, err)
+                    => _logger.Error("Error in StructsWriter<{type}>.Kafka: {err}", TypeName, err))
+#if DEBUG
+                .SetLogHandler((_, lm) =>
+                {
+                    switch (lm.Level)
+                    {
+                        case <= SyslogLevel.Debug:
+                            _logger.Debug("StructsWriter<{type}>.Kafka: {msg}", TypeName, lm.Message);
+                            break;
+                        default:
+                            _logger.Information("StructsWriter<{type}>.Kafka: {msg}", TypeName, lm.Message);
+                            break;
+                    }
+                })
+#endif
+                .Build();
+            Interlocked.Exchange(ref _producer, prod);
         }
-        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Error(ex, "Error in StructsWriter<{type}>", TypeName);
+            throw;
         }
+
+        _logger.Information("StructsWriter<{type}> is started.", TypeName);
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken ct)
+    {
+        Interlocked.Exchange(ref _producer, null)?.Dispose();
         _logger.Warning("StructsWriter<{type}> is stopped.", TypeName);
+        return Task.CompletedTask;
     }
 
     public byte[] Serialize(T[] data, SerializationContext context)
-        => MemoryMarshal.AsBytes(data).ToArray();
+        => Serialize(data);
 
     public byte[] Serialize(string data, SerializationContext context)
         => _keyMessage;
+
+    public static byte[] Serialize(T[] data)
+        => MemoryMarshal.AsBytes(data).ToArray();
 }

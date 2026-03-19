@@ -26,4 +26,9 @@
       <ProjectReference Include="..\Microservices.Shared\Microservices.Shared.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="linq2db" Version="6.2.1" />
+      <PackageReference Include="Npgsql" Version="10.0.2" />
+    </ItemGroup>
+
 </Project>

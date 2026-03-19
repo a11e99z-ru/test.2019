@@ -7,4 +7,10 @@ public static class DomainExtensions
     
     public static long ToMicroseconds(this DateTime time)
         => (long)(time - DateTime.UnixEpoch).TotalMicroseconds;
+
+    public static DateTime FromMilliseconds(this long millis)
+        => DateTime.UnixEpoch.AddMilliseconds(millis);
+
+    public static DateTime FromMicroseconds(this long micros)
+        => DateTime.UnixEpoch.AddMicroseconds(micros);
 }
