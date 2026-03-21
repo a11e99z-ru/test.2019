@@ -7,6 +7,11 @@ using Serilog;
 
 namespace Microservices.Shared.Infrastructure;
 
+/// <summary>
+/// Distributed data to all subscribers step-by-step
+/// with probably some batching 
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public sealed class Distributor<T>
     : BackgroundService
     , IAsyncDistributor<T>

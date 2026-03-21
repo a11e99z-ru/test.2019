@@ -11,8 +11,8 @@ public sealed record TradeEntity
     public Guid TradeId { get; set; }
 
     // for notifications
-    [Column("numid"), Identity] 
-    public long NumId { get; set; }
+    [Column("rowid"), Identity] 
+    public long RowId { get; set; }
     
     [Column("timestamp")]
     public DateTime Timestamp { get; set; }

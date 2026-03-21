@@ -16,6 +16,9 @@ public record struct KlineInfo
     public DataInfo Info;
     public KlinePeriod Period;
 
+    public DateTime OpenTime => Info.EventTime; // includes
+    public DateTime CloseTime => Info.EventTime.AddSeconds(Period.ToSeconds()); // excludes
+
     public Kline Kline;
 }
 

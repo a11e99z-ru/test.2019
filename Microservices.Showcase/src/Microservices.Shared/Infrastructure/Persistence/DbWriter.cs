@@ -111,16 +111,16 @@ public sealed class DbWriter<T, P>
 #endif
         return res;
     }
-    
-    internal static async Task<ITable<P>> CreateTrades(IDataContext db, string tableName, TableOptions flags, CancellationToken ct)
+
+    private static async Task<ITable<P>> CreateTrades(IDataContext db, string tableName, TableOptions flags, CancellationToken ct)
     {
         var table = await db.CreateTableAsync<P>(tableName, tableOptions: flags, token: ct);
         
-        // create indices
+        // create indices w/o Fluent API
         foreach (var cmd in new[] { 
-                 $"CREATE INDEX IF NOT EXISTS ix_{tableName}_timestamp ON {tableName}(timestamp DESC)",
-                 $"CREATE INDEX IF NOT EXISTS ix_{tableName}_symbol ON {tableName} USING HASH(symbol)"
-             })
+                     $"CREATE INDEX IF NOT EXISTS ix_{tableName}_timestamp ON {tableName}(timestamp DESC)",
+                     $"CREATE INDEX IF NOT EXISTS ix_{tableName}_symbol ON {tableName} USING HASH(symbol)"
+                 })
         {
             await db.ExecuteAsync(cmd, cancellationToken: ct);
         }
@@ -129,7 +129,7 @@ public sealed class DbWriter<T, P>
         var cmd2 = $@"""CREATE OR REPLACE FUNCTION notify_order_event()
         RETURNS trigger AS $$
         BEGIN
-        PERFORM pg_notify('{TradeUpdatesChannelName}', NEW.numid::text);
+        PERFORM pg_notify('{TradeUpdatesChannelName}', NEW.rowid::text);
         RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;

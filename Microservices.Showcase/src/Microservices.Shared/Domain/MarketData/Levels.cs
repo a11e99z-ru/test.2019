@@ -18,12 +18,12 @@ public record struct Level1Info
 #endregion
 
 #region Levels10
-public record struct Levels
+public record struct Levels10
 {
-    public Items Asks = new();
-    public Items Bids = new();
+    public Items Asks;
+    public Items Bids;
     
-    public Levels() { }
+    public Levels10() { }
 
     public PriceLevel BestAsk => Asks[0];
     public PriceLevel BestBid => Bids[0];
@@ -39,6 +39,6 @@ public record struct Levels10Info
 {
     public DataInfo Info;
 
-    public Levels Levels;
+    public Levels10 Levels;
 }
 #endregion

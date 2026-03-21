@@ -10,6 +10,7 @@ namespace Microservices.Shared.Domain;
 
 /// <summary>
 /// Short ASCII string with 16 chars.
+/// SSE/AVX is fast (sorry OSX users)
 /// </summary>
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct Str16
@@ -86,9 +87,6 @@ public unsafe struct Str16
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static Str16 FromJsonUnsafe(ReadOnlySpan<byte> span, out int consumed)
     {
-        // span should start after '\"'
-        Debug.Assert(((byte*)Unsafe.AsPointer(in Unsafe.AsRef(in span[0])))[-1] == '\"');
-        
         var str = Vector128.LoadUnsafe(in Unsafe.AsRef(in span[0]));
         var m = Sse2.CompareEqual(str, Vector128.Create((byte)'\"'));
         consumed = BitOperations.TrailingZeroCount(Sse2.MoveMask(m) | BitMaxLength);

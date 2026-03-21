@@ -4,6 +4,8 @@ public class AppConfig
 {
     public string ConsulServer { get; set; } = "localhost:8500";
     
+    public string MarketDataUrl { get; set; } = "";
+    
     public KafkaConfig Kafka { get; set; } = new KafkaConfig();
     
     public DbConfig Db { get; set; } = new DbConfig();
@@ -15,7 +17,6 @@ public class AppConfig
         public string Servers { get; set; } = "localhost:9092";
         public string Topic { get; set; } = "";
         public string GroupKey { get; set; } = "microservices.showcase";
-        
         //TODO security
     }
 

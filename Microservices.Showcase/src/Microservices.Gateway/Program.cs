@@ -1,3 +1,8 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿/*
+ * Listens Bybit' WebSocket market-data and sends:
+ *  - Trades to DataBase
+ *  - Klines to Kafka
+ *  - Levels10 to gRPC
+*/
 
-Console.WriteLine("Hello, World!");
+Console.WriteLine("FIN.");
