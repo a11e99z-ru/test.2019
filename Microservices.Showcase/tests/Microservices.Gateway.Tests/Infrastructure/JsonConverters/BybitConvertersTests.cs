@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microservices.Shared.Domain.MarketData;
-using Microservices.Shared.Infrastructure.JsonConverters.Bybit;
+using Microservices.Gateway.Infrastructure.JsonConverters.Bybit;
 using Xunit;
 
-namespace Microservices.Shared.Tests.Infrastructure.JsonConverters;
+namespace Microservices.Gateway.Tests.Infrastructure.JsonConverters;
 
 public class BybitConvertersTests
 {
@@ -189,7 +189,7 @@ public class BybitConvertersTests
 }
 """u8;
 
-        var conv = new LevelsConverter();
+        var conv = new LevelsInfoConverter();
         var lvl10 = default(Levels10Info);
         {
             var reader = new Utf8JsonReader(jsonSnapshot, isFinalBlock: true, state: default);

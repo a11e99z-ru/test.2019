@@ -2,6 +2,7 @@
   <Project Path="src/Microservices.Shared/Microservices.Shared.csproj" />
   <Project Path="src/Microservices.Gateway/Microservices.Gateway.csproj" />
   <Folder Name="/tests/">
+    <Project Path="tests/Microservices.Gateway.Tests/Microservices.Gateway.Tests.csproj" />
     <Project Path="tests/Microservices.Shared.Tests/Microservices.Shared.Tests.csproj" />
   </Folder>
   <Folder Name="/bench/">

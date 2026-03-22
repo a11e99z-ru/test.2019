@@ -13,6 +13,16 @@ namespace Microservices.Gateway.Infrastructure;
 public sealed class BybitListener
     : BackgroundService
 {
+    private const string Subscribe = 
+"""
+{"req_id":"1","op":"subscribe","args":[
+"orderbook.50.BTCUSDT",
+"publicTrade.BTCUSDT",
+"orderbook.50.ETHUSDT",
+"publicTrade.ETHUSDT"
+]}
+"""; // NO "kline.1.***USDT"
+    
     private readonly ILogger _logger = Log.ForContext<BybitListener>();
     private readonly AppConfig _config;
     private readonly IAsyncPublisher<TradeInfo[]> _pubTrades;

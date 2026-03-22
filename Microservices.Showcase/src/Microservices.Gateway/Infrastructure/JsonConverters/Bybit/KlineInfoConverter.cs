@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.MarketData;
 
-namespace Microservices.Shared.Infrastructure.JsonConverters.Bybit;
+namespace Microservices.Gateway.Infrastructure.JsonConverters.Bybit;
 
 public sealed class KlineInfoConverter
     : JsonConverter<ArraySegment<KlineInfo>>
