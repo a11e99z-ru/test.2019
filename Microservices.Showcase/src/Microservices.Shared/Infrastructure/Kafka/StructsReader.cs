@@ -28,51 +28,68 @@ public sealed class StructsReader<T>
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
+        await Task.Yield();
         _logger.Information("StructsReader<{type}> is starting...", TypeName);
-        try
-        {
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = _config.Servers,
-                GroupId = _config.GroupKey,
-                EnableAutoCommit = true
-                //TODO security
-            };
-            
-            using var consumer = new ConsumerBuilder<string, T[]>(config)
-                .SetKeyDeserializer(this)
-                .SetValueDeserializer(this)
-                .SetErrorHandler((_, err)
-                    => _logger.Error("Error in StructsReader<{type}>.Kafka: {err}", TypeName, err))
-#if DEBUG
-                .SetLogHandler((_, lm) =>
-                {
-                    switch (lm.Level)
-                    {
-                        case <= SyslogLevel.Debug:
-                            _logger.Debug("StructsReader<{type}>.Kafka: {msg}", TypeName, lm.Message);
-                            break;
-                        default:
-                            _logger.Information("StructsReader<{type}>.Kafka: {msg}", TypeName, lm.Message);
-                            break;
-                    }
-                })
-#endif
-                .Build();
-            consumer.Subscribe(_config.Topic);
 
-            while (!ct.IsCancellationRequested)
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = _config.Servers,
+            GroupId = _config.GroupKey,
+            EnableAutoCommit = true,
+            AutoOffsetReset = AutoOffsetReset.Earliest
+            //TODO security
+        };
+
+        using var consumer = new ConsumerBuilder<string, T[]>(config)
+            .SetKeyDeserializer(this)
+            .SetValueDeserializer(this)
+            .SetErrorHandler((_, err)
+                => _logger.Error("Error in StructsReader<{type}>.Kafka: {err}", TypeName, err))
+#if DEBUG
+            .SetPartitionsAssignedHandler((c, partitions) =>
+            {
+                _logger.Information("StructsReader<{type}> partitions assigned: {partitions}", 
+                    TypeName, string.Join(", ", partitions));
+            })
+            .SetLogHandler((_, lm) =>
+            {
+                switch (lm.Level)
+                {
+                    case <= SyslogLevel.Debug:
+                        _logger.Debug("StructsReader<{type}>.Kafka: {msg}", TypeName, lm.Message);
+                        break;
+                    default:
+                        _logger.Information("StructsReader<{type}>.Kafka: {msg}", TypeName, lm.Message);
+                        break;
+                }
+            })
+#endif
+            .Build();
+        
+        consumer.Subscribe(_config.Topic);
+
+        while (!ct.IsCancellationRequested)
+        {
+            try
             {
                 var recv = consumer.Consume(ct);
                 if (recv?.Message?.Value is T[] data)
                     await _publisher.PublishAsync(data, ct);
             }
+            catch (OperationCanceledException) { break; }
+            catch (ConsumeException ex) when (ex.Error.Code == ErrorCode.UnknownTopicOrPart)
+            {
+                // Normal during startup if topic is not created yet
+                _logger.Warning("StructsReader<{type}>: Topic {topic} not found yet, retrying...", TypeName, _config.Topic);
+                await Task.Delay(1000, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error in StructsReader<{type}> loop", TypeName);
+                await Task.Delay(1000, ct);
+            }
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error in StructsReader<{type}>", TypeName);
-        }
+        
         _logger.Warning("StructsReader<{type}> is stopped.", TypeName);
     }
 

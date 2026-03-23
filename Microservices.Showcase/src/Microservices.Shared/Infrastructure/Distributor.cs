@@ -41,6 +41,7 @@ public sealed class Distributor<T>
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
+        await Task.Yield();
         _logger.Information("Distributor<{type}> is starting...", TypeName);
         try
         {
