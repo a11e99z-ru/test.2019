@@ -5,13 +5,14 @@ public class AppConfig
     public string ConsulServer { get; set; } = "localhost:8500";
     
     public string MarketDataUrl { get; set; } = "";
+    public int KlinePeriod { get; set; } = 10;
     
+    public int QueueSize { get; set; } = 8 * 1024;
+
     public KafkaConfig Kafka { get; set; } = new KafkaConfig();
     
     public DbConfig Db { get; set; } = new DbConfig();
     
-    public int QueueSize { get; set; } = 8 * 1024;
-
     public sealed record KafkaConfig
     {
         public string Servers { get; set; } = "localhost:9092";

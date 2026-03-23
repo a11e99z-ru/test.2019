@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using Microservices.Gateway.Infrastructure.JsonConverters.Bybit;
 using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.Configs;
 using Microservices.Shared.Domain.MarketData;
@@ -13,7 +16,7 @@ namespace Microservices.Gateway.Infrastructure;
 public sealed class BybitListener
     : BackgroundService
 {
-    private const string Subscribe = 
+    private static readonly byte[] Subscribe = 
 """
 {"req_id":"1","op":"subscribe","args":[
 "orderbook.50.BTCUSDT",
@@ -21,23 +24,28 @@ public sealed class BybitListener
 "orderbook.50.ETHUSDT",
 "publicTrade.ETHUSDT"
 ]}
-"""; // NO "kline.1.***USDT"
+"""u8.ToArray(); // NO "kline.1.***USDT"
     
     private readonly ILogger _logger = Log.ForContext<BybitListener>();
     private readonly AppConfig _config;
     private readonly IAsyncPublisher<TradeInfo[]> _pubTrades;
-    private readonly IAsyncPublisher<Levels10Info[]> _pubLevels;
     private readonly IAsyncPublisher<KlineInfo[]> _pubKlines;
+    private readonly IAsyncPublisher<Levels10Info> _pubLevels;
+
+    private readonly TradeInfoConverter _cnvTrades = new();
+    private readonly LevelsInfoConverter _cnvLevels = new();
+    private readonly KlinesGenerator _genKlines;
 
     public BybitListener(IOptions<AppConfig> options,
         IAsyncPublisher<TradeInfo[]> pubTrades,
-        IAsyncPublisher<Levels10Info[]> pubLevels,
-        IAsyncPublisher<KlineInfo[]> pubKlines)
+        IAsyncPublisher<KlineInfo[]> pubKlines,
+        IAsyncPublisher<Levels10Info> pubLevels)
     {
         _config = options.Value;
         _pubTrades = pubTrades;
         _pubLevels = pubLevels;
         _pubKlines = pubKlines;
+        _genKlines = new((KlinePeriod)_config.KlinePeriod);
     }
     
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -54,7 +62,7 @@ public sealed class BybitListener
 
         try
         {
-            await retryPolicy.ExecuteAsync(async (ct) => await ReadingLoop(ct), ct);
+            await retryPolicy.ExecuteAsync(async t => await ReadingLoop(t), ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -68,6 +76,7 @@ public sealed class BybitListener
     {
         using var ws = new ClientWebSocket();
         await ws.ConnectAsync(new(_config.MarketDataUrl), ct);
+        await ws.SendAsync(new ArraySegment<byte>(Subscribe), WebSocketMessageType.Text, true, ct);
 
         var buf = new byte[20 * 1024];
         while (!ct.IsCancellationRequested)
@@ -79,9 +88,33 @@ public sealed class BybitListener
                     res.CloseStatus, res.CloseStatusDescription);
                 return;
             }
+            
             Debug.Assert(res is { EndOfMessage: true, MessageType: WebSocketMessageType.Text });
-
-            var span = buf.AsSpan(0, res.Count);
+            var json = buf.AsSpan(0, res.Count);
+            Debug.Assert(json[0] == (byte)'{'); // really JSON
+            
+            var reader = new Utf8JsonReader(json, isFinalBlock: true, default);
+            if (json.IndexOf("\"publicTrade."u8) > 0) // trade
+            {
+                var trades = _cnvTrades.Read(ref reader, null, default);
+                
+                // pub trades
+                if (trades.Count == 0)
+                    continue;
+                await _pubTrades.PublishAsync(trades.Array![0..trades.Count], ct);
+                
+                // pub candles
+                var bars = _genKlines.Update(trades);
+                if (bars.Count > 0)
+                    await _pubKlines.PublishAsync(bars.Array![0..trades.Count], ct);
+            }
+            else if (json.IndexOf("\"orderbook.50."u8) > 0)
+            {
+                var lvl10 = _cnvLevels.Read(ref reader, null, default);
+                await _pubLevels.PublishAsync(lvl10, ct);
+            }
+            else
+                _logger.Debug("Unhandled WS-message: '{msg}'", Encoding.UTF8.GetString(json));
         }
     }
 }

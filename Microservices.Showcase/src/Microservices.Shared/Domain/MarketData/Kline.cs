@@ -76,7 +76,7 @@ public static class KlineExtensions
         public int ToSeconds()
             => (int)period < (int)KlinePeriod.Month1
                 ? (int)period
-                : throw new ArgumentException("Months cannot be converted to exactly seconds.");
+                : throw new ArgumentException("Months cannot be converted exactly to seconds.");
     }
 
     public static KlinePeriod ToKlinePeriod(this int seconds)
