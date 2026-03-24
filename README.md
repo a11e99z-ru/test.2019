@@ -25,8 +25,8 @@ A project demonstrating how services work in a Bloody Enterprise.
 - ~~Kafka reader & writer~~
 - ~~DB (**PostgreSQL**) notification, writer & reader~~
 - ~~Bybit' WebSocket subscriber & listener~~
-- add **Prometheius** metrics to <ins>MGw</ins>
-- add **Protobuf**' <ins>proto</ins> & **gRPC** server to <ins>MGw</ins> and register it in **Consul**
+- ~~add **Prometheius** metrics to <ins>MGw</ins>~~
+- add **Protobuf**' <ins>proto</ins> & **gRPC** server to <ins>MGw</ins> and register it in **Consul** (20%)
 - add **Loki** logs to services (50%)
 - set up **Grafana + Loki + Prometheus** server for logs and metrics (0%)
 - **Avalonia** Client App <ins>MPr</ins> to receive market-data from <ins>MGw</ins> and show it to user (0%)
