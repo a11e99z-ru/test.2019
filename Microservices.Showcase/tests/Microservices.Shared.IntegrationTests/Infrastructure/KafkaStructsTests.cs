@@ -3,7 +3,6 @@ using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.Configs;
 using Microservices.Shared.Infrastructure.Kafka;
 using Microsoft.Extensions.Options;
-using Xunit;
 using Serilog;
 using System.Diagnostics;
 using Confluent.Kafka;

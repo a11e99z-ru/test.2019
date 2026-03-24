@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package microservices.showcase;
+
+option csharp_namespace = "Microservices.Shared.Infrastructure.Grpc";
+
+// Enum values match the seconds/logic in KlinePeriod.cs
+enum KlinePeriod {
+  NONE = 0;
+  SEC1 = 1;
+  SEC2 = 2;
+  SEC3 = 3;
+  SEC5 = 5;
+  SEC10 = 10;
+  SEC15 = 15;
+  SEC20 = 20;
+  SEC30 = 30;
+  MIN1 = 60;
+  MIN2 = 120;
+  MIN3 = 180;
+  MIN5 = 300;
+  MIN10 = 600;
+  MIN15 = 900;
+  MIN20 = 1200;
+  MIN30 = 1800;
+  HOUR1 = 3600;
+  HOUR2 = 7200;
+  HOUR3 = 10800;
+  HOUR4 = 14400;
+  HOUR6 = 21600;
+  HOUR8 = 28800;
+  HOUR12 = 43200;
+  DAY1 = 86400;
+  DAY2 = 172800;
+  DAY3 = 259200;
+  WEEK1 = 604800;
+  WEEK2 = 1209600;
+  MONTH1 = 10000000;
+  MONTH3 = 30000000;
+  MONTH6 = 60000000;
+  YEAR1 = 120000000;
+}
+
+message DataInfoProto {
+  string symbol = 1;
+  int64 timestamp = 2; // Microseconds
+}
+
+message KlineProto {
+  double open = 1;
+  double high = 2;
+  double low = 3;
+  double close = 4;
+  double volume = 5;
+  double value = 6;
+}
+
+message KlineInfoProto {
+  DataInfoProto info = 1;
+  KlinePeriod period = 2;
+  KlineProto kline = 3;
+}
+
+message ErrorProto {
+  string message = 1;
+  int32 code = 2;
+}
+
+// Wrapper for streaming
+message MarketDataUpdate {
+  oneof update {
+    KlineInfoProto kline = 1;
+    ErrorProto error = 2;
+  }
+}
+
+service MarketDataService {
+  // Client subscribes and receives a stream of klines or errors
+  rpc SubscribeKlines(KlinesSubscriptionRequest) returns (stream MarketDataUpdate);
+}
+
+message KlinesSubscriptionRequest {
+  repeated string symbols = 1;
+  KlinePeriod period = 2;
+}

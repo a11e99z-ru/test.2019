@@ -36,7 +36,7 @@ public sealed class StructsReader<T>
             BootstrapServers = _config.Servers,
             GroupId = _config.GroupKey,
             EnableAutoCommit = true,
-            AutoOffsetReset = AutoOffsetReset.Earliest
+            AutoOffsetReset = AutoOffsetReset.Latest
             //TODO security
         };
 

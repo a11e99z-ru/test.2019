@@ -9,7 +9,7 @@ namespace Microservices.Shared.Infrastructure;
 
 /// <summary>
 /// Distributed data to all subscribers step-by-step
-/// with probably some batching 
+/// with probably some batching. So its kind of strategy
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public sealed class Distributor<T>

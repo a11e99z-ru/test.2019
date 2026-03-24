@@ -12,9 +12,9 @@ namespace Microservices.Shared.Infrastructure.Kafka;
 
 public sealed class StructsWriter<T>
     : IHostedService
-        , IAsyncPublisher<T[]>
-        , ISerializer<T[]>
-        , ISerializer<string>
+    , IAsyncPublisher<T[]>
+    , ISerializer<T[]>
+    , ISerializer<string>
     where T : unmanaged
 {
     private static readonly string TypeName = typeof(T).Name;
@@ -47,6 +47,8 @@ public sealed class StructsWriter<T>
             {
                 BootstrapServers = _config.Servers,
                 ClientId = Assembly.GetEntryAssembly()!.GetName().Name,
+                MessageTimeoutMs = 1_000,
+                MessageSendMaxRetries = 0,
                 AllowAutoCreateTopics = true,
                 LingerMs = 50,
                 BatchSize = 10,
