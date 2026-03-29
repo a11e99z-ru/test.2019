@@ -1,4 +1,4 @@
-using Microservices.Gateway.Infrastructure;
+using Microservices.Gateway.Infrastructure.KlineUtils;
 using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.MarketData;
 using Xunit;

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.MarketData;
 
-namespace Microservices.Gateway.Infrastructure;
+namespace Microservices.Gateway.Infrastructure.KlineUtils;
 
 // generates Klines based on Trades
 // own generator of klines cuz Bybit supports minimum 1min
@@ -11,7 +11,7 @@ namespace Microservices.Gateway.Infrastructure;
 public sealed class KlinesGenerator
 {
     private readonly KlinePeriod Period;
-    private readonly  long PeriodMcs;
+    private readonly long PeriodMcs;
         
     private readonly Dictionary<Str16, KlineInfo> _symKlines = new();
     private KlineInfo[] _klines = new KlineInfo[12];
@@ -19,7 +19,7 @@ public sealed class KlinesGenerator
     public KlinesGenerator(KlinePeriod period)
     {
         Period = period;
-        PeriodMcs = (int)period * 1_000_000L;
+        PeriodMcs = period.ToSeconds() * 1_000_000L;
     }
 
     public ArraySegment<KlineInfo> Update(ArraySegment<TradeInfo> trades)
@@ -34,9 +34,9 @@ public sealed class KlinesGenerator
             var nbar = Update(ref kline, it);
             if (nbar is { Kline.Volume: > 0 } bar)
             {
-                _klines[pos++] = bar;
                 if (pos == _klines.Length)
                     Array.Resize(ref _klines, _klines.Length * 2);
+                _klines[pos++] = bar;
             }
         }
 

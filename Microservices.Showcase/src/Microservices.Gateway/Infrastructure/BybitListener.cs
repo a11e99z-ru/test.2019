@@ -7,13 +7,10 @@ using Microservices.Gateway.Infrastructure.JsonConverters.Bybit;
 using Microservices.Shared.Domain;
 using Microservices.Shared.Domain.Configs;
 using Microservices.Shared.Domain.MarketData;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Polly;
-using Serilog;
 using Prometheus;
-using Prometheus.DotNetRuntime;
-using Prometheus.HttpClientMetrics;
+using Serilog;
 
 namespace Microservices.Gateway.Infrastructure;
 
@@ -26,7 +23,9 @@ public sealed class BybitListener
 "orderbook.50.BTCUSDT",
 "publicTrade.BTCUSDT",
 "orderbook.50.ETHUSDT",
-"publicTrade.ETHUSDT"
+"publicTrade.ETHUSDT",
+"orderbook.50.SOLUSDT",
+"publicTrade.SOLUSDT"
 ]}
 """u8.ToArray(); // NO for klines, I'll do it myself
     
@@ -34,9 +33,11 @@ public sealed class BybitListener
     private static readonly FrozenDictionary<Str16, string> _labels = new Dictionary<Str16, string>() 
     { 
         [Str16.FromAscii("BTCUSDT")] = "BTC", 
-        [Str16.FromAscii("ETHUSDT")] = "ETH",
         [Str16.FromAscii("btcusdt")] = "BTC", 
-        [Str16.FromAscii("ethusdt")] = "ETH" 
+        [Str16.FromAscii("ETHUSDT")] = "ETH",
+        [Str16.FromAscii("ethusdt")] = "ETH", 
+        [Str16.FromAscii("SOLUSDT")] = "SOL", 
+        [Str16.FromAscii("solusdt")] = "SOL" 
     }.ToFrozenDictionary();
     
     private readonly Histogram _tradeVolumeHistogram = Metrics.CreateHistogram(
@@ -65,26 +66,24 @@ public sealed class BybitListener
         new GaugeConfiguration() { LabelNames = ["asset"] });
 #endregion
     
-    private readonly ILogger _logger = Log.ForContext<BybitListener>();
+    private readonly Serilog.ILogger _logger = Log.ForContext<BybitListener>();
     private readonly AppConfig _config;
     private readonly IAsyncPublisher<TradeInfo> _pubTrades;
-    private readonly IAsyncPublisher<KlineInfo> _pubKlines;
     private readonly IAsyncPublisher<Levels10Info> _pubLevels;
+    private readonly IAsyncPublisher<string> _pubErrors;
 
     private readonly TradeInfoConverter _cnvTrades = new();
     private readonly LevelsInfoConverter _cnvLevels = new();
-    private readonly KlinesGenerator _genKlines;
 
     public BybitListener(IOptions<AppConfig> options,
         IAsyncDistributor<TradeInfo> pubTrades, 
-        IAsyncDistributor<KlineInfo> pubKlines,
-        IAsyncDistributor<Levels10Info> pubLevels)
+        IAsyncDistributor<Levels10Info> pubLevels,
+        IAsyncDistributor<string> pubErrors)
     {
         _config = options.Value;
         _pubTrades = pubTrades;
         _pubLevels = pubLevels;
-        _pubKlines = pubKlines;
-        _genKlines = new((KlinePeriod)_config.KlinePeriod);
+        _pubErrors = pubErrors;
     }
     
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -95,7 +94,7 @@ public sealed class BybitListener
             .Handle<WebSocketException>().Or<IOException>()
             .WaitAndRetryAsync(int.MaxValue, 
                 retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                (ex, time, context) => {
+                async (ex, time, context) => {
                     _logger.Error(ex, "WS-conn failed. Retrying in {secs}s...", time.TotalSeconds);
                 });
 
@@ -107,6 +106,7 @@ public sealed class BybitListener
         catch (Exception ex)
         {
             _logger.Error(ex, "Error in BybitListener.");
+            await _pubErrors.PublishAsync(ex.Message, ct);
         }
         _logger.Warning("BybitListener is stopped.");
     }
@@ -115,6 +115,7 @@ public sealed class BybitListener
     {
         using var ws = new ClientWebSocket();
         await ws.ConnectAsync(new(_config.MarketDataUrl), ct);
+        await _pubErrors.PublishAsync("", ct);
         await ws.SendAsync(new ArraySegment<byte>(Subscribe), WebSocketMessageType.Text, true, ct);
 
         var buf = new byte[20 * 1024];
@@ -149,11 +150,6 @@ public sealed class BybitListener
                     _lastTradePrice.WithLabels(label).Set(it.Trade.Price);
                     _tradeVolumeHistogram.WithLabels(label).Observe(it.Trade.Price * it.Trade.Volume);
                 }
-
-                // pub candles
-                var bars = _genKlines.Update(trades);
-                foreach (var it in bars)
-                    await _pubKlines.PublishAsync(it, ct);
             }
             else if (json.IndexOf("\"orderbook.50."u8) > 0)
             {

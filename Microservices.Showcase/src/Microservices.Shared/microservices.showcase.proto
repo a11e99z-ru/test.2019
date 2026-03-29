@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package microservices.showcase;
 
-option csharp_namespace = "Microservices.Shared.Infrastructure.Grpc";
+option csharp_namespace = "Microservices.Shared.Grpc";
 
 // Enum values match the seconds/logic in KlinePeriod.cs
 enum KlinePeriod {
