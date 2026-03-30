@@ -11,14 +11,14 @@ A project demonstrating how services work in a Bloody Enterprise.
 
 ## Services involved
 - **Consul** for searching <ins>MGw</ins> service in <ins>MPr</ins>.
-- **Bybit API + WebSockets + JSON** - market-data for BTCUSDT, ETHUSDT in <ins>MGw</ins>.
-- **Kafka** for transmitting Levels10 - an order book storing price levels and volumes.
+- **Bybit API + WebSockets + JSON** - market-data for trading pairs in <ins>MGw</ins>.
+- **Kafka** for transmitting Levels10 - an order book storing price levels[10] and volumes.
 - **PostgreSQL** for storing trades and notifying <ins>MPr</ins> of new trades through table-triggers + DB-notification mechanism.
 - **gRPC+Protobuf** for communication between <ins>MPr</ins> and <ins>MGw</ins>.
 - **Serilog+Loki** for transmitting structured logs to **Grafana**.
 - **Prometheus** for transmitting metrics to **Grafana**.
 - **Docker** for running services and **testcontainers**.
-- **Grafana** for dashboards (currently, the idea is to embed a browser in <ins>MPr</ins>).
+- **Grafana** for dashboards.
 
 ## TODO:
 - ~~Domain entities: Trades, Levels, OHLC etc~~
@@ -26,10 +26,11 @@ A project demonstrating how services work in a Bloody Enterprise.
 - ~~DB (**PostgreSQL**) notification, writer & reader~~
 - ~~Bybit' WebSocket subscriber & listener~~
 - ~~add **Prometheius** metrics to <ins>MGw</ins>~~
-- add **Protobuf**' <ins>proto</ins> & **gRPC** server to <ins>MGw</ins> and register it in **Consul** (20%)
+- ~~add **Protobuf**' <ins>proto</ins> & **gRPC** server to <ins>MGw</ins>~~
+- register <ins>MGw</ins> in **Consul**
 - add **Loki** logs to services (50%)
-- set up **Grafana + Loki + Prometheus** server for logs and metrics (0%)
-- **Avalonia** Client App <ins>MPr</ins> to receive market-data from <ins>MGw</ins> and show it to user (0%)
+- set up **Grafana + Loki + Prometheus** server for logs and metrics
+- **Avalonia** Client App <ins>MPr</ins> to receive market-data from <ins>MGw</ins> and show it to user
 - more integrations tests with testcontainers (30%)
 
 ### Under active (re)construction: 90% done, 90% left.
